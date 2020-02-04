@@ -1,0 +1,179 @@
+function Animation(spriteSheet, startX, startY, frameWidth, frameHeight, sheetWidth, frameDuration, frames, loop, reverse, scale) {
+    this.spriteSheet = spriteSheet;
+    this.startX = startX;
+    this.startY = startY;
+    this.frameWidth = frameWidth;
+    this.frameDuration = frameDuration;
+    this.frameHeight = frameHeight;
+    this.sheetWidth = sheetWidth;
+    this.frames = frames;
+    this.totalTime = frameDuration * frames;
+    this.elapsedTime = 0;
+    this.loop = loop;
+    this.reverse = reverse;
+    this.scale = scale;
+}
+
+Animation.prototype.drawFrame = function (tick, ctx, x, y, scaleBy) {
+    var scaleBy = scaleBy || 1;
+    this.elapsedTime += tick;
+    if (this.isDone()) {
+        if (this.loop) this.elapsedTime = 0;
+    }
+    var index = this.reverse ? this.frames - this.currentFrame() - 1 : this.currentFrame();
+    var vindex = 0;
+    if ((index + 1) * this.frameWidth + this.startX > this.spriteSheet.width) {
+        index -= Math.floor((this.spriteSheet.width - this.startX) / this.frameWidth);
+        vindex++;
+    }
+    while ((index + 1) * this.frameWidth > this.spriteSheet.width) {
+        index -= Math.floor(this.spriteSheet.width / this.frameWidth);
+        vindex++;
+    }
+
+    var locX = x;
+    var locY = y;
+    var offset = vindex === 0 ? this.startX : 0;
+    ctx.drawImage(this.spriteSheet,
+                  index * this.frameWidth + offset, vindex * this.frameHeight + this.startY,  // source from sheet
+                  this.frameWidth, this.frameHeight,
+                  locX, locY,
+                  this.frameWidth * scaleBy,
+                  this.frameHeight * scaleBy);
+}
+
+
+Animation.prototype.currentFrame = function () {
+    return Math.floor(this.elapsedTime / this.frameDuration);
+}
+
+Animation.prototype.isDone = function () {
+    return (this.elapsedTime >= this.totalTime);
+}
+
+// no inheritance
+function Background(game, spritesheet) {
+    this.x = 0;
+    this.y = 0;
+    this.spritesheet = spritesheet;
+    this.game = game;
+    this.ctx = game.ctx;
+};
+
+Background.prototype.draw = function () {
+    this.ctx.drawImage(this.spritesheet,
+                   this.x, this.y);
+};
+
+Background.prototype.update = function () {
+};
+
+function Swordsman(game) {
+    this.walkRight = new Animation(ASSET_MANAGER.getAsset("./img/SwordWalk.png"), 0, 0, 30.25, 49, 4, 0.30, 4, true, false, 2);
+    this.walkLeft = new Animation(ASSET_MANAGER.getAsset("./img/SwordWalkFlipped.png"), 3, 0, 30.25, 230, 4, 0.10, 14, true, true, 2);
+    this.runRight = new Animation(ASSET_MANAGER.getAsset("./img/SwordRun.png"), 0, 0, 38.75, 43, 4, 0.10, 14, true, false, 2);
+    this.runLeft = new Animation(ASSET_MANAGER.getAsset("./img/SwordRunFlipped.png"), 3, 0, 38.75, 43, 4, 0.10, 14, true, true, 2);
+    this.slashRight = new Animation(ASSET_MANAGER.getAsset("./img/SwordSlash.png"), 0, 0, 82.5714, 50, 7, 0.10, 14, true, false, 2);
+    this.slashLeft =  new Animation(ASSET_MANAGER.getAsset("./img/SwordSlashFlipped.png"), 6, 0, 82.5714, 50, 7, 0.10, 14, true, false, 2);
+    this.x = 0;
+    this.y = 0;
+    this.walkingRight = true;
+    this.walkingLeft = false;
+    this.runningRight = false;
+    this.runningLeft = false;
+    this.slashingRight = false;
+    this.slashingLeft = false;
+    this.speed = 50;
+    this.game = game;
+    this.ctx = game.ctx;
+    Entity.call(this, game, 50, 430);
+}
+
+Swordsman.prototype.draw = function () {
+    //this.walkRight.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 1);
+    if (this.walkingRight) this.walkRight.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 2);
+    if (this.runningRight) this.runRight.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 2);
+    this.slashRight.drawFrame(this.gameClockTick, this.ctx, this.x, this.y, 2);
+    /*else if (this.walkingLeft) this.walkLeft.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 2);
+    else if (this.runningLeft) this.runningLeft.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 2);
+    else if (this.slashingRight) this.slashRight.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 2);
+    else if (this.slashingLeft) this.slashLeft.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 2);*/
+    Entity.prototype.draw.call(this);
+}
+
+Swordsman.prototype.update = function () {
+    if (this.walkingRight) {
+        this.speed = 50;
+        this.x += this.game.clockTick * this.speed;
+        if (this.x === 400) {
+            this.walkingRight = false;
+            this.runningRight = true;
+        }
+    }
+    console.log(this.walkingRight);
+    console.log(this.runningRight);
+    console.log(this.x);
+    console.log(this.y);
+    if (this.runningRight) {
+        this.speed = 100;
+        this.x += this.gameClockTick * this.speed;
+    }
+    if (this.x > 800) this.x = -100;
+}
+
+
+// inheritance 
+function Dedede(game, spritesheet) {
+    this.animation = new Animation(spritesheet, 0, 0, 512, 256, 2, 0.05, 8, true, true, 0.5);
+    this.speed = 350;
+    this.ctx = game.ctx;
+    Entity.call(this, game, 0, 250);
+}
+
+Dedede.prototype = new Entity();
+Dedede.prototype.constructor = Dedede;
+
+Dedede.prototype.update = function () {
+    this.x += this.game.clockTick * this.speed;
+    if (this.x > 800) this.x = -230;
+    Entity.prototype.update.call(this);
+}
+
+Dedede.prototype.draw = function () {
+    this.animation.drawFrame(this.game.clockTick, this.ctx, this.x, this.y, 1);
+    Entity.prototype.draw.call(this);
+}
+
+// the "main" code begins here
+
+var ASSET_MANAGER = new AssetManager();
+
+
+ASSET_MANAGER.queueDownload("./img/SwordWalk.png");
+ASSET_MANAGER.queueDownload("./img/SwordWalkFlipped.png");
+ASSET_MANAGER.queueDownload("./img/SwordRun.png");
+ASSET_MANAGER.queueDownload("./img/SwordRunFlipped.png");
+ASSET_MANAGER.queueDownload("./img/SwordSlash.png");
+ASSET_MANAGER.queueDownload("./img/SwordSlashFlipped.png");
+ASSET_MANAGER.queueDownload("./img/DededeFly.png");
+ASSET_MANAGER.queueDownload("./img/DededeFlyFlipped.png");
+ASSET_MANAGER.queueDownload("./img/DededeFall.png");
+ASSET_MANAGER.queueDownload("./img/DededeFallFlipped.png");
+ASSET_MANAGER.queueDownload("./img/background.png");
+
+ASSET_MANAGER.downloadAll(function () {
+    var canvas = document.getElementById("gameWorld");
+    var ctx = canvas.getContext("2d");
+
+    var gameEngine = new GameEngine();
+    gameEngine.init(ctx);
+    gameEngine.start();
+
+    var bg = new Background(gameEngine, ASSET_MANAGER.getAsset("./img/background.png"));
+    var swordsman = new Swordsman(gameEngine);
+    gameEngine.addEntity(bg);
+    gameEngine.addEntity(swordsman);
+    console.log(swordsman.walkingRight);
+    console.log(swordsman.runningRight);
+    console.log("All Done!");
+});
